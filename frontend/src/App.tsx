@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Layout from './components/Layout/Layout';
 import ApplicationsPage from './pages/ApplicationsPage';
+import MessagesPage from './pages/MessagesPage';
 import StatisticsPage from './pages/StatisticsPage';
 import theme from './theme';
 
@@ -25,6 +26,7 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<ApplicationsPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
               <Route path="/statistics" element={<StatisticsPage />} />
             </Routes>
           </Layout>

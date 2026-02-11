@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { fetchApplications, updateApplication, bulkUpdateStatus } from '../api/applications';
 import { ApplicationFilters, ApplicationUpdate, BulkStatusUpdate } from '../types';
 
@@ -7,6 +7,7 @@ export function useApplications(filters: ApplicationFilters) {
     queryKey: ['applications', filters],
     queryFn: () => fetchApplications(filters),
     staleTime: 30000,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -18,6 +19,7 @@ export function useUpdateApplication() {
       updateApplication(id, update),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
     },
   });
 }
@@ -29,6 +31,7 @@ export function useBulkUpdateStatus() {
     mutationFn: (update: BulkStatusUpdate) => bulkUpdateStatus(update),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['applications'] });
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
     },
   });
 }

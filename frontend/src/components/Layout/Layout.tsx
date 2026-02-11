@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import EmailIcon from '@mui/icons-material/Email';
 
 const drawerWidth = 240;
 
@@ -27,6 +28,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const menuItems = [
     { text: 'Applications', icon: <PeopleIcon />, path: '/' },
+    { text: 'Messages', icon: <EmailIcon />, path: '/messages' },
     { text: 'Statistics', icon: <BarChartIcon />, path: '/statistics' },
   ];
 

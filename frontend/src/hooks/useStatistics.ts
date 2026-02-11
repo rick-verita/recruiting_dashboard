@@ -5,6 +5,9 @@ import {
   fetchDailyCountsBySource,
   fetchSourceBreakdown,
   fetchStatusBySource,
+  fetchPositionBreakdown,
+  fetchAggregatedPositionBreakdown,
+  fetchMultiPositionApplicants,
 } from '../api/statistics';
 
 export function useSummaryStats() {
@@ -43,6 +46,30 @@ export function useStatusBySource() {
   return useQuery({
     queryKey: ['statistics', 'status-by-source'],
     queryFn: fetchStatusBySource,
+    staleTime: 60000,
+  });
+}
+
+export function usePositionBreakdown() {
+  return useQuery({
+    queryKey: ['statistics', 'by-position'],
+    queryFn: fetchPositionBreakdown,
+    staleTime: 60000,
+  });
+}
+
+export function useAggregatedPositionBreakdown() {
+  return useQuery({
+    queryKey: ['statistics', 'by-position-aggregated'],
+    queryFn: fetchAggregatedPositionBreakdown,
+    staleTime: 60000,
+  });
+}
+
+export function useMultiPositionApplicants() {
+  return useQuery({
+    queryKey: ['statistics', 'multi-position-applicants'],
+    queryFn: fetchMultiPositionApplicants,
     staleTime: 60000,
   });
 }

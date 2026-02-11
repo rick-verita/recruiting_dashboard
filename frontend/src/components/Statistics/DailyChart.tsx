@@ -1,5 +1,21 @@
 import { useState } from 'react';
-import { Paper, Typography, Box, Skeleton, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import {
+  Paper,
+  Typography,
+  Box,
+  Skeleton,
+  ToggleButton,
+  ToggleButtonGroup,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from '@mui/material';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import {
   LineChart,
   Line,
@@ -33,8 +49,11 @@ interface DailyChartProps {
   isLoading: boolean;
 }
 
+type ViewAs = 'graph' | 'table';
+
 export default function DailyChart({ data, dataBySource, isLoading }: DailyChartProps) {
   const [viewMode, setViewMode] = useState<'total' | 'by-source'>('total');
+  const [viewAs, setViewAs] = useState<ViewAs>('graph');
 
   if (isLoading) {
     return (
@@ -75,20 +94,73 @@ export default function DailyChart({ data, dataBySource, isLoading }: DailyChart
     dateLabel: format(parseISO(item.date), 'MMM d'),
   }));
 
+  // Table: most recent date at top (descending)
+  const tableDataTotal = (chartDataTotal ?? []).slice().sort((a, b) => b.date.localeCompare(a.date));
+  const tableDataBySource = (chartDataBySource ?? []).slice().sort((a, b) => b.date.localeCompare(a.date));
+  const sourceColumns = Array.from(activeSources);
+
   return (
     <Paper sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="h6">Daily Applications (Last 30 Days)</Typography>
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={handleViewModeChange}
-          size="small"
-        >
-          <ToggleButton value="total">Total</ToggleButton>
-          <ToggleButton value="by-source">By Source</ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={handleViewModeChange}
+            size="small"
+          >
+            <ToggleButton value="total">Total</ToggleButton>
+            <ToggleButton value="by-source">By Source</ToggleButton>
+          </ToggleButtonGroup>
+          <Button
+            size="small"
+            startIcon={viewAs === 'graph' ? <TableChartIcon /> : <BarChartIcon />}
+            onClick={() => setViewAs(viewAs === 'graph' ? 'table' : 'graph')}
+          >
+            {viewAs === 'graph' ? 'View as table' : 'View as graph'}
+          </Button>
+        </Box>
       </Box>
+      {viewAs === 'table' ? (
+        <TableContainer sx={{ maxHeight: 300 }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
+                {viewMode === 'total' ? (
+                  <TableCell align="right">Count</TableCell>
+                ) : (
+                  sourceColumns.map((src) => {
+                    const opt = SOURCE_OPTIONS.find((o) => o.value === src);
+                    return (
+                      <TableCell key={src} align="right">
+                        {opt?.label ?? src}
+                      </TableCell>
+                    );
+                  })
+                )}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(viewMode === 'total' ? tableDataTotal : tableDataBySource).map((row: { date: string; dateLabel: string; count?: number; [k: string]: unknown }) => (
+                <TableRow key={row.date}>
+                  <TableCell>{row.dateLabel ?? row.date}</TableCell>
+                  {viewMode === 'total' ? (
+                    <TableCell align="right">{(row.count ?? 0).toLocaleString()}</TableCell>
+                  ) : (
+                    sourceColumns.map((src) => (
+                      <TableCell key={src} align="right">
+                        {((row[src] as number) ?? 0).toLocaleString()}
+                      </TableCell>
+                    ))
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : (
       <Box sx={{ width: '100%', height: 300 }}>
         <ResponsiveContainer>
           {viewMode === 'total' ? (
@@ -154,6 +226,7 @@ export default function DailyChart({ data, dataBySource, isLoading }: DailyChart
           )}
         </ResponsiveContainer>
       </Box>
+      )}
     </Paper>
   );
 }

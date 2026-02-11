@@ -40,12 +40,35 @@ class ParsedApplication(BaseModel):
     )
 
 
+class ParsedMessage(BaseModel):
+    """Parsed message data (direct email or job-board message, not an application)."""
+
+    first_name: str = Field(..., description="Sender's or message author's first name")
+    last_name: str = Field(..., description="Sender's or message author's last name")
+    source: JobBoardSource = Field(
+        ...,
+        description="Where the message came from (e.g. linkedin for InMail, or 'other' for direct email)",
+    )
+    positions: list[str] = Field(
+        default_factory=list,
+        description="Position titles mentioned or relevant to the message (may be empty)",
+    )
+    message_link: Optional[str] = Field(
+        None,
+        description="URL to view the message on the platform (e.g. LinkedIn message link), if present in the email. Only for platform messages; null for direct emails.",
+    )
+
+
 class EmailParseResult(BaseModel):
     """Result of parsing an email for job application data."""
 
     is_job_application: bool = Field(
         ...,
-        description="Whether this email is a job application notification",
+        description="True only when this email is clearly a notification that someone submitted an official application through a job board/listing (e.g. 'New application from X for Y'). Not true for direct emails or job-board messages (e.g. LinkedIn InMail).",
+    )
+    is_message: bool = Field(
+        ...,
+        description="True when this is a direct email from a person or a message via a job board (e.g. LinkedIn message) that is NOT an application—i.e. someone reached out or messaged but did not submit an official application.",
     )
     confidence: float = Field(
         ...,
@@ -55,5 +78,9 @@ class EmailParseResult(BaseModel):
     )
     application: Optional[ParsedApplication] = Field(
         None,
-        description="Parsed application data (null if not a job application email)",
+        description="Parsed application data (set only when is_job_application is true)",
+    )
+    message: Optional[ParsedMessage] = Field(
+        None,
+        description="Parsed message data (set when is_message is true)",
     )

@@ -9,6 +9,7 @@ from .base import Base, TimestampMixin, intpk
 
 if TYPE_CHECKING:
     from .application import Application
+    from .message import Message
 
 
 class Applicant(Base, TimestampMixin):
@@ -26,6 +27,11 @@ class Applicant(Base, TimestampMixin):
     # Relationships
     applications: Mapped[list["Application"]] = relationship(
         "Application",
+        back_populates="applicant",
+        cascade="all, delete-orphan",
+    )
+    messages: Mapped[list["Message"]] = relationship(
+        "Message",
         back_populates="applicant",
         cascade="all, delete-orphan",
     )

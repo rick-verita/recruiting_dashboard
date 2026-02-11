@@ -171,12 +171,13 @@ class GmailService:
 
         body = self._extract_body(message["payload"])
 
+        # Email received date from Gmail header (what Gmail shows: e.g. "4:56 PM" for today, "Sun, Feb 8, 6:27 PM" otherwise)
         received_at = None
         if "date" in headers:
             try:
                 received_at = parsedate_to_datetime(headers["date"])
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Could not parse Date header %r: %s", headers.get("date"), e)
 
         return {
             "message_id": message["id"],

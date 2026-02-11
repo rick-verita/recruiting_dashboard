@@ -14,6 +14,33 @@ class SummaryStats(BaseModel):
     total_applicants: int
     status_counts: dict[str, int]
     source_counts: dict[str, int]
+    review_rate: float = 0.0
+    contact_rate: float = 0.0
+    rejected_rate: float = 0.0
+    hire_rate: float = 0.0
+
+
+class MultiPositionApplicant(BaseModel):
+    """Applicant who applied to more than one position."""
+
+    applicant_name: str
+    position_titles: str  # comma-separated
+    application_link: str | None
+
+
+class MultiPositionApplicantsResponse(BaseModel):
+    """Response for applicants who applied to multiple positions."""
+
+    total: int
+    items: list[MultiPositionApplicant]
+
+
+class PositionBreakdown(BaseModel):
+    """Breakdown of applications by position."""
+
+    position_title: str
+    count: int
+    percentage: float
 
 
 class DailyCount(BaseModel):

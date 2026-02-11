@@ -55,7 +55,10 @@ class EmailProcessor:
             logger.error(f"Failed to fetch message {message_id}: {e}")
             raise
 
-        # Create email record
+        # Prefer HTML so links (e.g. "log in to your account") are present as href; plain text strips URLs
+        body = email_data["body_html"] or email_data["body_text"]
+
+        # Create email record (received_at = email Date header, used as application date in UI)
         email_record = await self.db.create_email_record(
             session=session,
             gmail_message_id=email_data["message_id"],
@@ -63,13 +66,12 @@ class EmailProcessor:
             subject=email_data["subject"],
             sender=email_data["sender"],
             received_at=email_data["received_at"],
-            raw_body=email_data["body_text"] or email_data["body_html"],
+            raw_body=body,
         )
         await session.flush()
 
-        # Parse with OpenAI
+        # Parse with OpenAI (body already set above; HTML when available so parser can extract links)
         try:
-            body = email_data["body_text"] or email_data["body_html"]
             if not body:
                 logger.warning(f"Message {message_id} has no body content")
                 email_record.processing_status = EmailProcessingStatus.SKIPPED
@@ -79,29 +81,45 @@ class EmailProcessor:
 
             parse_result = self.openai.parse_email(
                 subject=email_data["subject"],
-                body=body,
+                body=body or "",
                 sender=email_data["sender"],
             )
 
             logger.info(
                 f"Parsed email {message_id}: "
                 f"is_job_application={parse_result.is_job_application}, "
+                f"is_message={parse_result.is_message}, "
                 f"confidence={parse_result.confidence}"
             )
 
-            # Save to database
-            application = await self.db.save_parsed_application(
-                session=session,
-                email_record=email_record,
-                parse_result=parse_result,
-            )
-
-            if application:
-                logger.info(
-                    f"Created application {application.id} for "
-                    f"{parse_result.application.first_name} "
-                    f"{parse_result.application.last_name}"
+            # Route to application or message (mutually exclusive)
+            if parse_result.is_job_application and parse_result.application:
+                application = await self.db.save_parsed_application(
+                    session=session,
+                    email_record=email_record,
+                    parse_result=parse_result,
                 )
+                if application:
+                    logger.info(
+                        f"Created application for "
+                        f"{parse_result.application.first_name} "
+                        f"{parse_result.application.last_name}"
+                    )
+            elif parse_result.is_message and parse_result.message:
+                message = await self.db.save_parsed_message(
+                    session=session,
+                    email_record=email_record,
+                    parse_result=parse_result,
+                )
+                if message:
+                    logger.info(
+                        f"Created message from "
+                        f"{parse_result.message.first_name} "
+                        f"{parse_result.message.last_name}"
+                    )
+            else:
+                email_record.processing_status = EmailProcessingStatus.SKIPPED
+                email_record.processed_at = datetime.now(timezone.utc)
 
             # Add processed label in Gmail
             try:

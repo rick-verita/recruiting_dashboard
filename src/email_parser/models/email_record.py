@@ -11,6 +11,7 @@ from .base import Base, TimestampMixin, intpk
 
 if TYPE_CHECKING:
     from .application import Application
+    from .message import Message
 
 
 class EmailProcessingStatus(str, enum.Enum):
@@ -59,6 +60,10 @@ class EmailRecord(Base, TimestampMixin):
     # Relationships
     applications: Mapped[list["Application"]] = relationship(
         "Application",
+        back_populates="email_record",
+    )
+    messages: Mapped[list["Message"]] = relationship(
+        "Message",
         back_populates="email_record",
     )
 

@@ -61,6 +61,27 @@ export interface SummaryStats {
   total_applicants: number;
   status_counts: Record<string, number>;
   source_counts: Record<string, number>;
+  review_rate: number;
+  contact_rate: number;
+  rejected_rate: number;
+  hire_rate: number;
+}
+
+export interface MultiPositionApplicant {
+  applicant_name: string;
+  position_titles: string;
+  application_link: string | null;
+}
+
+export interface MultiPositionApplicantsResponse {
+  total: number;
+  items: MultiPositionApplicant[];
+}
+
+export interface PositionBreakdown {
+  position_title: string;
+  count: number;
+  percentage: number;
 }
 
 export interface DailyCount {
@@ -91,6 +112,53 @@ export interface PositionListItem {
 }
 
 export interface ApplicationFilters {
+  page: number;
+  page_size: number;
+  sort_by: string;
+  sort_order: 'asc' | 'desc';
+  search?: string;
+  status?: string[];
+  source?: string[];
+  date_from?: string;
+  date_to?: string;
+}
+
+// Message (direct email or job-board message, not an application)
+export interface Message {
+  id: number;
+  applicant: Applicant;
+  applicant_name: string;
+  positions: Position[];
+  position_titles: string;
+  source: JobBoard;
+  status: ApplicationStatus;
+  comments: string | null;
+  email: string | null; // sender email for direct email
+  message_link: string | null; // link to view message on platform
+  received_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MessageListResponse {
+  items: Message[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface MessageUpdate {
+  status?: ApplicationStatus;
+  comments?: string;
+}
+
+export interface MessageBulkStatusUpdate {
+  ids: number[];
+  status: ApplicationStatus;
+}
+
+export interface MessageFilters {
   page: number;
   page_size: number;
   sort_by: string;

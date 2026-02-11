@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from email_parser.api.routers import applications, statistics, positions
+from email_parser.api.routers import applications, messages, statistics, positions
 
 app = FastAPI(
     title="Recruiting Dashboard API",
@@ -22,6 +22,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(applications.router, prefix="/api/applications", tags=["applications"])
+app.include_router(messages.router, prefix="/api/messages", tags=["messages"])
 app.include_router(statistics.router, prefix="/api/statistics", tags=["statistics"])
 app.include_router(positions.router, prefix="/api/positions", tags=["positions"])
 

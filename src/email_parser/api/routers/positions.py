@@ -4,8 +4,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from email_parser.api.deps import DbSession
-from email_parser.models.position import Position
+from ..deps import DbSession
+from ...models.position import Position
 
 router = APIRouter()
 

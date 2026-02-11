@@ -15,8 +15,9 @@ from ..config import Settings
 from ..models.applicant import Applicant
 from ..models.application import Application, ApplicationStatus, JobBoard
 from ..models.email_record import EmailProcessingStatus, EmailRecord
+from ..models.message import Message
 from ..models.position import Position
-from ..schemas.parsed_email import EmailParseResult, JobBoardSource
+from ..schemas.parsed_email import EmailParseResult, JobBoardSource, ParsedMessage
 
 logger = logging.getLogger(__name__)
 
@@ -160,13 +161,18 @@ class DatabaseService:
             position = await self.get_or_create_position(session, pos_title)
             positions.append(position)
 
+        # application_time = when the notification email was received (from Gmail Date header), not any date in the body
+        application_time = email_record.received_at
+        if application_time is None:
+            application_time = datetime.now(timezone.utc)
+
         # Create application
         application = Application(
             applicant_id=applicant.id,
             email_record_id=email_record.id,
             source=source,
             application_link=app_data.application_link,
-            application_time=email_record.received_at,
+            application_time=application_time,
             status=ApplicationStatus.NEW,
         )
         application.positions = positions
@@ -177,3 +183,53 @@ class DatabaseService:
         email_record.processed_at = datetime.now(timezone.utc)
 
         return application
+
+    async def save_parsed_message(
+        self,
+        session: AsyncSession,
+        email_record: EmailRecord,
+        parse_result: EmailParseResult,
+    ) -> Optional[Message]:
+        """
+        Save parsed message data (direct email or job-board message) to database.
+
+        Returns:
+            Created Message or None if not a message
+        """
+        if not parse_result.is_message or not parse_result.message:
+            return None
+
+        msg_data: ParsedMessage = parse_result.message
+
+        applicant = await self.get_or_create_applicant(
+            session,
+            first_name=msg_data.first_name,
+            last_name=msg_data.last_name,
+        )
+        await session.flush()
+
+        source = JobBoard(msg_data.source.value)
+        positions = []
+        for pos_title in msg_data.positions:
+            position = await self.get_or_create_position(session, pos_title)
+            positions.append(position)
+
+        received_at = email_record.received_at or datetime.now(timezone.utc)
+        sender_email = email_record.sender  # For direct email; null for platform messages is ok
+
+        message = Message(
+            applicant_id=applicant.id,
+            email_record_id=email_record.id,
+            source=source,
+            message_link=msg_data.message_link,
+            sender_email=sender_email,
+            received_at=received_at,
+            status=ApplicationStatus.NEW,
+        )
+        message.positions = positions
+        session.add(message)
+
+        email_record.processing_status = EmailProcessingStatus.PROCESSED
+        email_record.processed_at = datetime.now(timezone.utc)
+
+        return message

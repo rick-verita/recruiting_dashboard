@@ -1,4 +1,19 @@
-import { Paper, Typography, Box, Skeleton } from '@mui/material';
+import { useState } from 'react';
+import {
+  Paper,
+  Typography,
+  Box,
+  Skeleton,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from '@mui/material';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import {
   BarChart,
   Bar,
@@ -17,6 +32,8 @@ interface StatusBySourceProps {
 }
 
 export default function StatusBySource({ data, isLoading }: StatusBySourceProps) {
+  const [viewAs, setViewAs] = useState<'graph' | 'table'>('graph');
+
   if (isLoading) {
     return (
       <Paper sx={{ p: 3 }}>
@@ -35,9 +52,47 @@ export default function StatusBySource({ data, isLoading }: StatusBySourceProps)
 
   return (
     <Paper sx={{ p: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Status Distribution by Source
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6">Status Distribution by Source</Typography>
+        <Button
+          size="small"
+          startIcon={viewAs === 'graph' ? <TableChartIcon /> : <BarChartIcon />}
+          onClick={() => setViewAs(viewAs === 'graph' ? 'table' : 'graph')}
+        >
+          {viewAs === 'graph' ? 'View as table' : 'View as graph'}
+        </Button>
+      </Box>
+      {viewAs === 'table' ? (
+        <TableContainer sx={{ maxHeight: 400 }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Source</TableCell>
+                {STATUS_OPTIONS.map((s) => (
+                  <TableCell key={s.value} align="right">
+                    {s.label}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {(data ?? []).map((row) => {
+                const option = SOURCE_OPTIONS.find((o) => o.value === row.source);
+                return (
+                  <TableRow key={row.source}>
+                    <TableCell>{option?.label ?? row.source}</TableCell>
+                    {STATUS_OPTIONS.map((s) => (
+                      <TableCell key={s.value} align="right">
+                        {(row.status_counts[s.value] ?? 0).toLocaleString()}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : (
       <Box sx={{ width: '100%', height: 400 }}>
         <ResponsiveContainer>
           <BarChart data={chartData} layout="vertical">
@@ -58,6 +113,7 @@ export default function StatusBySource({ data, isLoading }: StatusBySourceProps)
           </BarChart>
         </ResponsiveContainer>
       </Box>
+      )}
     </Paper>
   );
 }
