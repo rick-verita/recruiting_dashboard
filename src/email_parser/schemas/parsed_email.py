@@ -55,13 +55,17 @@ class ParsedMessage(BaseModel):
     )
     message_link: Optional[str] = Field(
         None,
-        description="URL to view the message on the platform (e.g. LinkedIn message link), if present in the email. Only for platform messages; null for direct emails.",
+        description="For platform messages only: an https URL that opens the message/conversation on the platform (e.g. linkedin.com, indeed.com) so the user can reply there. NEVER use a mailto: link—many Reply buttons are mailto; ignore those and use the link that opens the platform (e.g. 'View in LinkedIn', 'See conversation'). For direct email (source=other): leave null.",
     )
 
 
 class EmailParseResult(BaseModel):
     """Result of parsing an email for job application data."""
 
+    is_hiring_related: bool = Field(
+        ...,
+        description="True if the email pertains to hiring, recruiting, job applications, or roles in any way. Be lenient: include outreach, role mentions, recruiter/candidate contact, job boards, etc. False only for clearly unrelated content (e.g. marketing, newsletters, purely personal).",
+    )
     is_job_application: bool = Field(
         ...,
         description="True only when this email is clearly a notification that someone submitted an official application through a job board/listing (e.g. 'New application from X for Y'). Not true for direct emails or job-board messages (e.g. LinkedIn InMail).",

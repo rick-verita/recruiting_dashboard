@@ -87,13 +87,18 @@ class EmailProcessor:
 
             logger.info(
                 f"Parsed email {message_id}: "
+                f"is_hiring_related={parse_result.is_hiring_related}, "
                 f"is_job_application={parse_result.is_job_application}, "
                 f"is_message={parse_result.is_message}, "
                 f"confidence={parse_result.confidence}"
             )
 
+            # Only save as application or message if email is hiring-related
+            if not parse_result.is_hiring_related:
+                email_record.processing_status = EmailProcessingStatus.SKIPPED
+                email_record.processed_at = datetime.now(timezone.utc)
             # Route to application or message (mutually exclusive)
-            if parse_result.is_job_application and parse_result.application:
+            elif parse_result.is_job_application and parse_result.application:
                 application = await self.db.save_parsed_application(
                     session=session,
                     email_record=email_record,
@@ -110,6 +115,7 @@ class EmailProcessor:
                     session=session,
                     email_record=email_record,
                     parse_result=parse_result,
+                    gmail_thread_id=email_data["thread_id"],
                 )
                 if message:
                     logger.info(

@@ -189,9 +189,13 @@ class DatabaseService:
         session: AsyncSession,
         email_record: EmailRecord,
         parse_result: EmailParseResult,
+        gmail_thread_id: Optional[str] = None,
     ) -> Optional[Message]:
         """
         Save parsed message data (direct email or job-board message) to database.
+
+        For direct email (source=other), message_link is set to the Gmail thread URL.
+        For platform messages, message_link is the reply/message button URL from the parser.
 
         Returns:
             Created Message or None if not a message
@@ -215,13 +219,22 @@ class DatabaseService:
             positions.append(position)
 
         received_at = email_record.received_at or datetime.now(timezone.utc)
-        sender_email = email_record.sender  # For direct email; null for platform messages is ok
+        # Only direct emails should expose sender_email as a mailto contact.
+        sender_email = email_record.sender if source == JobBoard.OTHER else None
+
+        # Direct email: use Gmail thread link so "Contact" opens the email chain, not a generic address
+        if source == JobBoard.OTHER and gmail_thread_id:
+            message_link = f"https://mail.google.com/mail/u/0/#inbox/{gmail_thread_id}"
+        else:
+            # Platform message: never store mailto: (e.g. Reply button that replies by email); we want the link to the platform
+            raw = msg_data.message_link or ""
+            message_link = raw if raw.strip().lower().startswith("http") else None
 
         message = Message(
             applicant_id=applicant.id,
             email_record_id=email_record.id,
             source=source,
-            message_link=msg_data.message_link,
+            message_link=message_link,
             sender_email=sender_email,
             received_at=received_at,
             status=ApplicationStatus.NEW,

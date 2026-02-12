@@ -225,17 +225,17 @@ export default function MessagesTable() {
       width: 180,
       renderCell: (params: GridRenderCellParams<Message>) => {
         const row = params.row;
-        if (row.email) {
-          return (
-            <Link href={`mailto:${row.email}`}>
-              {row.email}
-            </Link>
-          );
-        }
         if (row.message_link) {
           return (
             <Link href={row.message_link} target="_blank" rel="noopener">
               View message
+            </Link>
+          );
+        }
+        if (row.email) {
+          return (
+            <Link href={`mailto:${row.email}`}>
+              {row.email}
             </Link>
           );
         }
